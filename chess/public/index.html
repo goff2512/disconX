@@ -46,6 +46,7 @@
       </div>
       <div class="foot">
         <button id="flip" type="button" class="ghost">Flip board</button>
+        <button id="device" type="button" class="ghost" hidden>Use on phone</button>
         <a href="./" class="ghost">Leave</a>
         <span id="conn" class="conn"></span>
       </div>
@@ -67,8 +68,19 @@
       </div>
     </div>
   </div>
+  <div id="deviceModal" class="modal" hidden>
+    <div class="modal-box device-box">
+      <p>Continue as <strong id="deviceName"></strong> on another device</p>
+      <div id="qr"></div>
+      <p class="small">Scan with your phone's camera, or open this link on the other device. Both devices will play your side.</p>
+      <div class="row"><code id="deviceLink"></code><button id="deviceCopy" type="button">Copy</button></div>
+      <p class="small warn-note">Keep this link private: anyone who opens it plays your side.</p>
+      <button id="deviceClose" type="button" class="primary">Done</button>
+    </div>
+  </div>
   <div id="toast" hidden></div>
 
+  <script src="qrcode.js"></script>
   <script src="chess.js"></script>
   <script src="coach.js"></script>
   <script src="app.js"></script>

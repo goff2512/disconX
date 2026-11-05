@@ -79,7 +79,8 @@ Flip the **Learning mode** switch in the side panel. It only changes that player
 ## Notes
 
 - Games live in the server's memory; they're gone when you stop the server.
-- Your seat belongs to your browser tab. If you close the tab, open the link again and click **Play as …**, which shows up while that seat is offline.
+- Your seat belongs to your browser tab, not your name. To play your side on another device (e.g. move from PC to phone), click **Use on phone** and scan the QR code. Keep that link private: whoever opens it plays your side.
+- Before the first move, a seat whose player has left goes to the next person who opens the invite link. Mid-game, use **Play as …**, which appears while a seat's player is offline.
 - Home Assistant users: it runs fine on any always-on box (Pi, NAS, HA host with Node available).
 
 `npm test` runs the rules engine against standard perft positions.

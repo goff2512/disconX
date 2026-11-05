@@ -59,6 +59,12 @@ function join(room, token, name) {
   if (!colorOf(room, token)) {
     if (!room.players.w) room.players.w = token;
     else if (!room.players.b) room.players.b = token;
+    else if (!room.game.history.length) {
+      // Before the first move, a seat whose owner has gone away (closed tab, switched
+      // device) goes to the next person who arrives.
+      const free = ['w', 'b'].find((c) => !isOnline(room, c));
+      if (free) { room.players[free] = token; room.names[free] = ''; }
+    }
   }
   const color = colorOf(room, token);
   if (color && name) room.names[color] = name;

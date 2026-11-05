@@ -25,6 +25,16 @@
 
   const params = new URLSearchParams(location.search);
   const room = (params.get('room') || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12);
+
+  // A "use on another device" link carries the player's seat key: adopt it, then hide it
+  // from the address bar so it doesn't get shared by accident.
+  const key = params.get('key');
+  if (key && /^[A-Z0-9]{20}$/.test(key)) {
+    token = key;
+    store.set('sessionStorage', 'chess-token', token);
+    params.delete('key');
+    history.replaceState(null, '', location.pathname + '?' + params);
+  }
   let name = store.get('localStorage', 'chess-name') || '';
 
   function glyph(piece) {
@@ -84,7 +94,9 @@
   let hint = null;        // { move, why } from the hint button
   let prevGame = null;    // position before the last move, for describing it
 
+  let baseUrl = location.origin;
   shareBase().then((base) => {
+    baseUrl = base;
     const link = `${base}/?room=${room}`;
     $('#link').textContent = link;
     $('#copy').onclick = async () => {
@@ -501,10 +513,34 @@
     const [main, small] = statusText();
     $('#status').innerHTML = escapeHTML(main) + (small ? `<span class="small">${escapeHTML(small)}</span>` : '');
     renderActions();
+    $('#device').hidden = !view.you;
     renderCoach();
     renderMoves();
   }
 
   $('#flip').onclick = () => { flipLocal = !flipLocal; render(); };
+
+  // Continue as the same player on another device (QR code + private link).
+  $('#device').onclick = () => {
+    if (!view || !view.you) return;
+    const link = `${baseUrl}/?room=${room}&key=${token}`;
+    $('#deviceName').textContent = view.names[view.you] || COLOR_NAME[view.you];
+    $('#deviceLink').textContent = link;
+    try {
+      const qr = qrcode(0, 'M');
+      qr.addData(link);
+      qr.make();
+      $('#qr').innerHTML = qr.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
+    } catch (e) {
+      $('#qr').textContent = 'Could not draw the QR code. Use the link below.';
+    }
+    $('#deviceModal').hidden = false;
+  };
+  $('#deviceCopy').onclick = async () => {
+    try { await navigator.clipboard.writeText($('#deviceLink').textContent); toast('Link copied'); }
+    catch (e) { toast('Copy not allowed here. Use the QR code instead.'); }
+  };
+  $('#deviceClose').onclick = () => { $('#deviceModal').hidden = true; };
+  $('#deviceModal').onclick = (e) => { if (e.target.id === 'deviceModal') e.target.hidden = true; };
   connect();
 })();
