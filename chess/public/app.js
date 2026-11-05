@@ -322,19 +322,34 @@
     return board.reduce((s, p) => s + (p && p[0] === color ? VALUE[p[1]] : 0), 0);
   }
 
+  const lastCaps = {};
+  const popAt = {};
   function renderPlayer(el, color) {
     const g = view.game;
     const label = view.names[color] || COLOR_NAME[color];
     const seated = view.seated[color];
-    const caps = capturedBy(g.board, color).map(glyph).join('');
+    const capList = capturedBy(g.board, color);
+    const before = lastCaps[color];
+    const hl = g.history.length;
+    if (before && before.hl !== hl) {
+      // A capture on the latest move: remember which tray piece is new until the next move.
+      const idx = before.list.length < capList.length
+        ? capList.findIndex((p, i) => capList.indexOf(p) === i && capList.filter((q) => q === p).length > before.list.filter((q) => q === p).length)
+        : -1;
+      popAt[color] = idx >= 0 ? { hl, idx } : null;
+    }
+    lastCaps[color] = { hl, list: capList };
+    const newIdx = popAt[color] && popAt[color].hl === hl ? popAt[color].idx : -1;
+    const caps = capList.map((p, i) => glyph(p).replace('class="pc ', i === newIdx ? 'class="pc new ' : 'class="pc ')).join('');
     const diff = material(g.board, color) - material(g.board, Chess.opp(color));
-    el.innerHTML =
+    const html =
       `<span class="dot ${view.online[color] ? 'on' : ''}" title="${view.online[color] ? 'online' : 'offline'}"></span>` +
       `<span>${seated ? escapeHTML(label) : `<span class="you">Waiting for ${COLOR_NAME[color]}…</span>`}</span>` +
       (view.you === color ? '<span class="you">(you)</span>' : '') +
       `<span class="caps">${caps}</span>` +
       (diff > 0 ? `<span class="adv">+${diff}</span>` : '') +
       (!g.result && g.turn === color ? '<span class="turn">to move</span>' : '');
+    if (el.dataset.html !== html) { el.innerHTML = html; el.dataset.html = html; }
   }
 
   function escapeHTML(s) {

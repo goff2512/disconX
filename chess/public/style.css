@@ -159,3 +159,13 @@ input { padding: .55em .7em; border: 1px solid var(--line); border-radius: 8px; 
 .sq.target.safe::after { background: rgba(50, 140, 40, .55); }
 .confirm-box { max-width: 340px; }
 .confirm-box p { font-weight: 400; line-height: 1.45; }
+
+/* Captured-piece tray */
+.player .caps { display: flex; align-items: center; letter-spacing: 0; }
+.player .caps .pc { font-size: 1.75rem; margin-right: -1px; }
+.player .caps .pc.new { animation: pop .7s ease-out; }
+@keyframes pop {
+  0% { transform: scale(2.4); filter: drop-shadow(0 0 6px gold); }
+  60% { transform: scale(.9); }
+  100% { transform: scale(1); }
+}
