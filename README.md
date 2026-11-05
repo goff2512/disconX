@@ -12,3 +12,9 @@ Chrome extension to Unfollow people who don't follow back and Add them to a priv
 
 Copyright (c) [Abhinav Singhal](https://twitter.com/umunBeing)/2024
 
+
+---
+
+## Also in this repo: LAN Chess
+
+[`chess/`](./chess) holds a standalone two-player chess game for your local network. See [chess/README.md](./chess/README.md).
