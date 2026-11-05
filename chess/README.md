@@ -49,6 +49,18 @@ the host computer's firewall (Windows asks the first time; on macOS it's System 
 - Reload or a dropped Wi-Fi connection reconnects to your seat automatically
 - Two tabs on one computer count as two players (handy for testing)
 
+## Learning mode
+
+Flip the **Learning mode** switch in the side panel. It only changes that player's own screen, and it's remembered on that device.
+
+- Tap a piece to see how it moves and what it's worth
+- Green dots are safe squares, red dots are squares where the piece could be captured
+- Red ring: one of your pieces is in danger. Green ring: an opponent's piece you can win
+- An "Are you sure?" warning before you give away a piece for free
+- When you're in check, it explains your three options and shows the attacker
+- **Hint** button suggests a move and explains why
+- Beginner tips while you wait for the other player
+
 ## Notes
 
 - Games live in the server's memory; they're gone when you stop the server.

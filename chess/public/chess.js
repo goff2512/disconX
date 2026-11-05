@@ -92,6 +92,38 @@
     return slide(ROOK_DIRS, 'R', 'Q') || slide(BISHOP_DIRS, 'B', 'Q');
   }
 
+  // Squares of pieces of color `by` that attack `sq` (also finds defenders of a piece).
+  function attackersOf(board, sq, by) {
+    const out = [];
+    const r = sq >> 3, c = sq & 7;
+    const pr = by === 'w' ? r + 1 : r - 1;
+    for (const dc of [-1, 1]) {
+      if (onBoard(pr, c + dc) && board[idx(pr, c + dc)] === by + 'P') out.push(idx(pr, c + dc));
+    }
+    for (const [dr, dc] of KNIGHT) {
+      if (onBoard(r + dr, c + dc) && board[idx(r + dr, c + dc)] === by + 'N') out.push(idx(r + dr, c + dc));
+    }
+    for (const [dr, dc] of KING) {
+      if (onBoard(r + dr, c + dc) && board[idx(r + dr, c + dc)] === by + 'K') out.push(idx(r + dr, c + dc));
+    }
+    const slide = (dirs, a, b) => {
+      for (const [dr, dc] of dirs) {
+        let rr = r + dr, cc = c + dc;
+        while (onBoard(rr, cc)) {
+          const p = board[idx(rr, cc)];
+          if (p) {
+            if (p === by + a || p === by + b) out.push(idx(rr, cc));
+            break;
+          }
+          rr += dr; cc += dc;
+        }
+      }
+    };
+    slide(ROOK_DIRS, 'R', 'Q');
+    slide(BISHOP_DIRS, 'B', 'Q');
+    return out;
+  }
+
   function pseudoMoves(s, from) {
     const b = s.board, p = b[from];
     if (!p) return [];
@@ -260,7 +292,7 @@
     return n;
   }
 
-  const api = { newGame, fromFEN, legalMoves, makeMove, isAttacked, sqName, opp, perft };
+  const api = { newGame, fromFEN, legalMoves, makeMove, advance, isAttacked, attackersOf, applyToBoard, sqName, opp, perft };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Chess = api;
 })(typeof self !== 'undefined' ? self : this);

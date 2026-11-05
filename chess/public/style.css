@@ -131,3 +131,31 @@ input { padding: .55em .7em; border: 1px solid var(--line); border-radius: 8px; 
   .panel { margin-top: 0; width: var(--size); }
   :root { --size: min(calc(100vw - 32px), calc(100vh - 120px), 640px); }
 }
+
+/* Learning mode */
+.switch { display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 600; user-select: none; }
+.switch input { position: absolute; opacity: 0; }
+.switch .track { width: 40px; height: 22px; border-radius: 999px; background: var(--line); position: relative; transition: background .15s; flex: none; }
+.switch .track::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: left .15s; box-shadow: 0 1px 2px rgba(0,0,0,.3); }
+.switch input:checked + .track { background: #4f8a3c; }
+.switch input:checked + .track::after { left: 21px; }
+.switch input:focus-visible + .track { outline: 2px solid var(--accent); outline-offset: 2px; }
+#coach { background: rgba(79, 138, 60, .1); border: 1px solid rgba(79, 138, 60, .35); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 10px; font-size: .92rem; }
+#coachText p { margin: 0 0 6px; }
+#coachText p:last-child { margin-bottom: 0; }
+#coachText .warn { color: #c0392b; font-weight: 600; }
+#coachText .good { color: #3d7a2b; font-weight: 600; }
+@media (prefers-color-scheme: dark) { #coachText .warn { color: #ff7b6b; } #coachText .good { color: #8fd476; } }
+.coach-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.legend { font-size: .78rem; color: var(--muted); display: flex; align-items: center; gap: 4px; }
+.legend i { display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-left: 6px; }
+.lg-red { border: 2px solid #d63a2f; }
+.lg-green { border: 2px solid #3f9a2b; }
+.sq.danger { box-shadow: inset 0 0 0 calc(var(--size) / 160 + 1px) #d63a2f; }
+.sq.win { box-shadow: inset 0 0 0 calc(var(--size) / 160 + 1px) #3f9a2b; }
+.sq.hint::before { content: ""; position: absolute; inset: 0; background: rgba(60, 130, 230, .45); }
+.sq.target.unsafe::after { background: rgba(214, 58, 47, .75); }
+.sq.target.cap.unsafe::after { background: none; border-color: rgba(214, 58, 47, .8); }
+.sq.target.safe::after { background: rgba(50, 140, 40, .55); }
+.confirm-box { max-width: 340px; }
+.confirm-box p { font-weight: 400; line-height: 1.45; }

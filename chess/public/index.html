@@ -30,6 +30,14 @@
     </section>
     <aside class="panel">
       <div id="status" aria-live="polite"></div>
+      <label class="switch"><input type="checkbox" id="coachToggle"><span class="track"></span> Learning mode</label>
+      <div id="coach" hidden>
+        <div id="coachText"></div>
+        <div class="coach-row">
+          <button id="hintBtn" type="button">💡 Hint</button>
+          <span class="legend"><i class="lg-red"></i>danger <i class="lg-green"></i>you can win it</span>
+        </div>
+      </div>
       <div id="actions"></div>
       <ol id="moves"></ol>
       <div class="invite">
@@ -50,9 +58,19 @@
       <div id="promoChoices"></div>
     </div>
   </div>
+  <div id="confirm" class="modal" hidden>
+    <div class="modal-box confirm-box">
+      <p id="confirmText"></p>
+      <div class="coach-row">
+        <button id="confirmNo" type="button" class="primary">Pick another move</button>
+        <button id="confirmYes" type="button">Move anyway</button>
+      </div>
+    </div>
+  </div>
   <div id="toast" hidden></div>
 
   <script src="chess.js"></script>
+  <script src="coach.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

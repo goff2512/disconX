@@ -80,6 +80,9 @@
   let selected = null;    // selected square index
   let flipLocal = false;  // manual flip toggle
   let pending = false;    // a move is in flight
+  let coachOn = store.get('localStorage', 'chess-coach') === '1';
+  let hint = null;        // { move, why } from the hint button
+  let prevGame = null;    // position before the last move, for describing it
 
   shareBase().then((base) => {
     const link = `${base}/?room=${room}`;
@@ -112,7 +115,14 @@
     const es = new EventSource('/api/events?' + q);
     const conn = $('#conn');
     es.addEventListener('state', (e) => {
-      view = JSON.parse(e.data);
+      const next = JSON.parse(e.data);
+      const oldGame = view && view.game;
+      if (!oldGame || next.game.history.length !== oldGame.history.length || next.game.history.join() !== oldGame.history.join()) {
+        hint = null;
+        if (oldGame && next.game.history.length === oldGame.history.length + 1) prevGame = oldGame;
+        else if (next.game.history.length === 0) prevGame = null;
+      }
+      view = next;
       pending = false;
       conn.textContent = 'Connected';
       conn.classList.remove('bad');
@@ -156,8 +166,15 @@
       if (ms.length) {
         const from = selected;
         selected = null;
-        if (ms[0].promo) choosePromotion(view.you).then((p) => p && sendMove(from, sq, p));
-        else sendMove(from, sq);
+        const go = () => {
+          if (ms[0].promo) choosePromotion(view.you).then((p) => p && sendMove(from, sq, p));
+          else sendMove(from, sq);
+        };
+        const risk = coachOn && Coach.moveRisk(g, ms[0]);
+        if (risk && risk.net >= 3) {
+          confirmMove(`Careful! Your ${Coach.NAME[risk.piece[1]]} on ${Chess.sqName(sq)} could be captured by the ${Coach.NAME[risk.attackerPiece[1]]} on ${Chess.sqName(risk.attacker)}` +
+            (risk.defended ? '. You would lose more than you get back.' : ', and nothing protects it.'), go, () => { selected = from; render(); });
+        } else go();
         render();
         return;
       }
@@ -171,6 +188,8 @@
     // Show the move right away; the server's reply confirms or corrects it.
     const next = Chess.makeMove(view.game, { from, to, promo });
     if (!next) return;
+    prevGame = view.game;
+    hint = null;
     view.game = next;
     view.drawOffer = null;
     pending = true;
@@ -194,6 +213,97 @@
       modal.hidden = false;
     });
   }
+
+  function confirmMove(text, yes, no) {
+    const modal = $('#confirm');
+    $('#confirmText').textContent = text;
+    modal.hidden = false;
+    $('#confirmYes').onclick = () => { modal.hidden = true; yes(); };
+    $('#confirmNo').onclick = () => { modal.hidden = true; no(); };
+    modal.onclick = (e) => { if (e.target === modal) { modal.hidden = true; no(); } };
+  }
+
+  /* ---------------- Learning mode ---------------- */
+  function coachMarks() {
+    // Square -> extra CSS classes for the board.
+    const marks = new Map();
+    const add = (sq, cls) => marks.set(sq, (marks.get(sq) || '') + ' ' + cls);
+    if (!coachOn || !view.you) return marks;
+    const g = view.game;
+    if (g.result) return marks;
+    for (const t of Coach.threats(g.board, view.you)) add(t.square, 'danger');
+    if (g.turn === view.you) {
+      for (const t of Coach.threats(g.board, Chess.opp(view.you))) add(t.square, 'win');
+      if (g.inCheck) for (const c of Coach.checkers(g)) add(c, 'danger');
+    }
+    if (hint) { add(hint.move.from, 'hint'); add(hint.move.to, 'hint'); }
+    return marks;
+  }
+
+  function coachText() {
+    const g = view.game, me = view.you;
+    const P = (txt, cls) => `<p${cls ? ` class="${cls}"` : ''}>${escapeHTML(txt)}</p>`;
+    if (!me) return P('Learning mode helps the players. Take a seat to use it.');
+    if (g.result) return P(g.result.winner === me ? 'You won! Click Rematch to play again.' : 'Every game teaches something. Click Rematch to play again.');
+    let html = '';
+    const last = Coach.describeLastMove(prevGame, g);
+    if (last && prevGame && prevGame.turn !== me) html += P(last);
+    if (g.turn !== me) {
+      html += P('Tip: ' + Coach.TIPS[Math.floor(g.history.length / 2) % Coach.TIPS.length]);
+      const mine = Coach.threats(g.board, me);
+      if (mine.length) html += P('Watch out: pieces with a red ring could be captured.', 'warn');
+      return html;
+    }
+    if (hint) return html + P('Hint: ' + hint.why, 'good');
+    if (g.inCheck) {
+      return html + P('You are in CHECK! Your king is under attack (red ring). You must do one of these:', 'warn') +
+        P('1. Move the king to a safe square.  2. Block the attack with another piece.  3. Capture the attacking piece.');
+    }
+    if (selected !== null) {
+      const p = g.board[selected];
+      html += P(Coach.PIECE_INFO[p[1]]);
+      for (const n of Coach.specialNotes(g, selected, myLegalMoves())) html += P(n);
+      html += P('Green dots are safe squares. Red dots are squares where it could be captured.');
+      return html;
+    }
+    const mine = Coach.threats(g.board, me);
+    if (mine.length) {
+      const t = mine[0];
+      html += P(`Your ${Coach.NAME[t.piece[1]]} on ${Chess.sqName(t.square)} is under attack by the ${Coach.NAME[t.attackerPiece[1]]} on ${Chess.sqName(t.attacker)}. Move it, protect it, or capture the attacker.`, 'warn');
+    }
+    const theirs = Coach.threats(g.board, Chess.opp(me));
+    if (theirs.length) {
+      const t = theirs[0];
+      html += P(`Look! Their ${Coach.NAME[t.piece[1]]} on ${Chess.sqName(t.square)} (green ring) can be won. Can you find how?`, 'good');
+    }
+    return html + P('Your turn. Tap one of your pieces to see where it can go.');
+  }
+
+  function renderCoach() {
+    $('#coachToggle').checked = coachOn;
+    $('#coach').hidden = !coachOn;
+    if (!coachOn) return;
+    $('#coachText').innerHTML = coachText();
+    const g = view.game;
+    $('#hintBtn').disabled = !view.you || !!g.result || g.turn !== view.you || pending;
+  }
+
+  $('#coachToggle').onchange = (e) => {
+    coachOn = e.target.checked;
+    store.set('localStorage', 'chess-coach', coachOn ? '1' : '0');
+    hint = null;
+    render();
+  };
+  $('#hintBtn').onclick = () => {
+    if (!view) return;
+    $('#hintBtn').disabled = true;
+    $('#coachText').innerHTML = '<p>Thinking…</p>';
+    setTimeout(() => {
+      hint = Coach.bestMove(view.game);
+      selected = null;
+      render();
+    }, 30);
+  };
 
   function capturedBy(board, color) {
     // Pieces of the other color missing from the board.
@@ -299,6 +409,8 @@
     const targets = new Map();
     if (selected !== null) for (const m of legal) if (m.from === selected) targets.set(m.to, m.capture);
     const kingInCheck = g.inCheck ? g.board.indexOf(g.turn + 'K') : -1;
+    const marks = coachMarks();
+    const showSafety = coachOn && selected !== null;
 
     for (let pos = 0; pos < 64; pos++) {
       const sq = flip ? 63 - pos : pos;
@@ -308,7 +420,14 @@
       let cls = 'sq ' + ((r + c) % 2 ? 'd' : 'l');
       if (g.lastMove && (g.lastMove.from === sq || g.lastMove.to === sq)) cls += ' last';
       if (sq === selected) cls += ' sel';
-      if (targets.has(sq)) cls += ' target' + (targets.get(sq) ? ' cap' : '');
+      if (targets.has(sq)) {
+        cls += ' target' + (targets.get(sq) ? ' cap' : '');
+        if (showSafety) {
+          const m = legal.find((x) => x.from === selected && x.to === sq);
+          cls += Coach.moveRisk(g, m) ? ' unsafe' : ' safe';
+        }
+      }
+      if (marks.has(sq)) cls += marks.get(sq);
       if (sq === kingInCheck) cls += ' check';
       el.className = cls;
       let html = g.board[sq] ? glyph(g.board[sq]) : '';
@@ -324,6 +443,7 @@
     const [main, small] = statusText();
     $('#status').innerHTML = escapeHTML(main) + (small ? `<span class="small">${escapeHTML(small)}</span>` : '');
     renderActions();
+    renderCoach();
     renderMoves();
   }
 
