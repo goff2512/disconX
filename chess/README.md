@@ -64,17 +64,29 @@ the host computer's firewall (Windows asks the first time; on macOS it's System 
 - Reload or a dropped Wi-Fi connection reconnects to your seat automatically
 - Two tabs on one computer count as two players (handy for testing)
 
-## Learning mode
+## Lessons
 
-Flip the **Learning mode** switch in the side panel. It only changes that player's own screen, and it's remembered on that device.
+Open **Lessons** from the start page or the game panel (`/learn.html`). Short, step-by-step lessons for complete beginners, played alone:
 
-- Tap a piece to see how it moves and what it's worth
-- Green dots are safe squares, red dots are squares where the piece could be captured
-- Red ring: one of your pieces is in danger. Green ring: an opponent's piece you can win
-- An "Are you sure?" warning before you give away a piece for free
-- When you're in check, it explains your three options and shows the attacker
-- **Hint** button suggests a move and explains why
-- Beginner tips while you wait for the other player
+1. **The board**: square names (a–h columns, 1–8 rows), tap-the-square practice
+2. **The pieces**: names and values, then one lesson per piece: collect the stars ★
+3. **Capturing**: take enemy pieces, what pieces are worth, don't land where you can be captured
+4. **Check and checkmate**: three ways out of check, checkmate in one
+5. **Special moves**: castling, en passant (promotion is in the pawn lesson)
+6. **Playing well**: five opening tips
+
+Progress (✓) is saved on each device. `node test/perft.js` doesn't cover lessons; every puzzle was checked to be solvable when written.
+
+## Help levels in a game
+
+Pick a **Help level** in the side panel. It only affects your own screen and is remembered on that device.
+
+| Level | What you get |
+|-------|--------------|
+| **New learner** | Plain language with no square names ("move your queen (blue ring) to the blue square"), piece cards, safe/unsafe dots, red and green rings, a warning before losing any piece, hints, tips |
+| **Intermediate** | Same help using square names, plus faint names on empty squares; warns before losing a knight or more |
+| **Regular** | Red rings on your pieces in danger, a warning before losing a rook or queen, and the Hint button |
+| **Off** | A normal game |
 
 ## Turn alerts
 

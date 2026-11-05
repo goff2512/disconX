@@ -90,7 +90,15 @@
   let selected = null;    // selected square index
   let flipLocal = false;  // manual flip toggle
   let pending = false;    // a move is in flight
-  let coachOn = store.get('localStorage', 'chess-coach') === '1';
+  // Help levels. Each device picks its own; "off" is a normal game.
+  const LEVELS = {
+    newbie:       { plain: true,  dots: true,  win: true,  confirmAt: 1, tips: true,  pieceInfo: true,  squareNames: false },
+    intermediate: { plain: false, dots: true,  win: true,  confirmAt: 3, tips: true,  pieceInfo: true,  squareNames: true },
+    regular:      { plain: false, dots: false, win: false, confirmAt: 5, tips: false, pieceInfo: false, squareNames: false },
+  };
+  let helpLevel = store.get('localStorage', 'chess-help') || (store.get('localStorage', 'chess-coach') === '1' ? 'intermediate' : 'off');
+  if (helpLevel !== 'off' && !LEVELS[helpLevel]) helpLevel = 'off';
+  const H = () => LEVELS[helpLevel] || null;
   let hint = null;        // { move, why } from the hint button
   let prevGame = null;    // position before the last move, for describing it
 
@@ -264,10 +272,14 @@
           if (ms[0].promo) choosePromotion(view.you).then((p) => p && sendMove(from, sq, p));
           else sendMove(from, sq);
         };
-        const risk = coachOn && Coach.moveRisk(g, ms[0]);
-        if (risk && risk.net >= 3) {
-          confirmMove(`Careful! Your ${Coach.NAME[risk.piece[1]]} on ${Chess.sqName(sq)} could be captured by the ${Coach.NAME[risk.attackerPiece[1]]} on ${Chess.sqName(risk.attacker)}` +
-            (risk.defended ? '. You would lose more than you get back.' : ', and nothing protects it.'), go, () => { selected = from; render(); });
+        const cfg = H();
+        const risk = cfg && Coach.moveRisk(g, ms[0]);
+        if (risk && risk.net >= cfg.confirmAt) {
+          const mine = Coach.NAME[risk.piece[1]], theirs = Coach.NAME[risk.attackerPiece[1]];
+          const text = cfg.plain
+            ? `Careful! If your ${mine} goes there, their ${theirs} can capture it` + (risk.defended ? ', and you would lose more than you win back.' : ', and nothing of yours protects it.')
+            : `Careful! Your ${mine} on ${Chess.sqName(sq)} could be captured by the ${theirs} on ${Chess.sqName(risk.attacker)}` + (risk.defended ? '. You would lose more than you get back.' : ', and nothing protects it.');
+          confirmMove(text, go, () => { selected = from; render(); });
         } else go();
         render();
         return;
@@ -322,30 +334,41 @@
     // Square -> extra CSS classes for the board.
     const marks = new Map();
     const add = (sq, cls) => marks.set(sq, (marks.get(sq) || '') + ' ' + cls);
-    if (!coachOn || !view.you) return marks;
+    const cfg = H();
+    if (!cfg || !view.you) return marks;
     const g = view.game;
     if (g.result) return marks;
     for (const t of Coach.threats(g.board, view.you)) add(t.square, 'danger');
     if (g.turn === view.you) {
-      for (const t of Coach.threats(g.board, Chess.opp(view.you))) add(t.square, 'win');
+      if (cfg.win) for (const t of Coach.threats(g.board, Chess.opp(view.you))) add(t.square, 'win');
       if (g.inCheck) for (const c of Coach.checkers(g)) add(c, 'danger');
     }
-    if (hint) { add(hint.move.from, 'hint'); add(hint.move.to, 'hint'); }
+    if (hint) { add(hint.move.from, 'hint-from'); add(hint.move.to, 'hint'); }
     return marks;
   }
 
   function coachText() {
-    const g = view.game, me = view.you;
+    const g = view.game, me = view.you, cfg = H(), plain = cfg.plain;
     const P = (txt, cls) => `<p${cls ? ` class="${cls}"` : ''}>${escapeHTML(txt)}</p>`;
-    if (!me) return P('Learning mode helps the players. Take a seat to use it.');
+    const at = (i) => (plain ? '' : ` on ${Chess.sqName(i)}`);
+    if (!me) return P('Help is for the players. Take a seat to use it.');
     if (g.result) return P(g.result.winner === me ? 'You won! Click Rematch to play again.' : 'Every game teaches something. Click Rematch to play again.');
     let html = '';
-    const last = Coach.describeLastMove(prevGame, g);
-    if (last && prevGame && prevGame.turn !== me) html += P(last);
+    if (cfg.tips) {
+      const last = Coach.describeLastMove(prevGame, g, plain);
+      if (last && prevGame && prevGame.turn !== me) html += P(last);
+    }
     if (g.turn !== me) {
-      html += P('Tip: ' + Coach.TIPS[Math.floor(g.history.length / 2) % Coach.TIPS.length]);
-      const mine = Coach.threats(g.board, me);
-      if (mine.length) html += P('Watch out: pieces with a red ring could be captured.', 'warn');
+      if (cfg.tips) html += P('Tip: ' + Coach.TIPS[Math.floor(g.history.length / 2) % Coach.TIPS.length]);
+      if (Coach.threats(g.board, me).length) html += P('Watch out: pieces with a red ring could be captured.', 'warn');
+      return html || P(`Waiting for ${COLOR_NAME[g.turn]}…`);
+    }
+    if (selected !== null && cfg.pieceInfo && !g.inCheck) {
+      const p = g.board[selected];
+      html = `<div class="piece-card">${glyph(p)}<strong>${Coach.NAME[p[1]][0].toUpperCase() + Coach.NAME[p[1]].slice(1)}</strong></div>` + P(Coach.PIECE_INFO[p[1]]);
+      for (const n of Coach.specialNotes(g, selected, myLegalMoves())) html += P(n);
+      if (cfg.dots) html += P('Green dots are safe squares. Red dots are squares where it could be captured.');
+      if (hint) html += P('Hint: ' + hint.why, 'good');
       return html;
     }
     if (hint) return html + P('Hint: ' + hint.why, 'good');
@@ -353,38 +376,37 @@
       return html + P('You are in CHECK! Your king is under attack (red ring). You must do one of these:', 'warn') +
         P('1. Move the king to a safe square.  2. Block the attack with another piece.  3. Capture the attacking piece.');
     }
-    if (selected !== null) {
-      const p = g.board[selected];
-      html += P(Coach.PIECE_INFO[p[1]]);
-      for (const n of Coach.specialNotes(g, selected, myLegalMoves())) html += P(n);
-      html += P('Green dots are safe squares. Red dots are squares where it could be captured.');
-      return html;
-    }
     const mine = Coach.threats(g.board, me);
     if (mine.length) {
       const t = mine[0];
-      html += P(`Your ${Coach.NAME[t.piece[1]]} on ${Chess.sqName(t.square)} is under attack by the ${Coach.NAME[t.attackerPiece[1]]} on ${Chess.sqName(t.attacker)}. Move it, protect it, or capture the attacker.`, 'warn');
+      html += P(`Your ${Coach.NAME[t.piece[1]]}${at(t.square)} has a red ring: their ${Coach.NAME[t.attackerPiece[1]]}${at(t.attacker)} can capture it. Move it, protect it, or capture the attacker.`, 'warn');
     }
-    const theirs = Coach.threats(g.board, Chess.opp(me));
-    if (theirs.length) {
-      const t = theirs[0];
-      html += P(`Look! Their ${Coach.NAME[t.piece[1]]} on ${Chess.sqName(t.square)} (green ring) can be won. Can you find how?`, 'good');
+    if (cfg.win) {
+      const theirs = Coach.threats(g.board, Chess.opp(me));
+      if (theirs.length) {
+        const t = theirs[0];
+        html += P(`Look! Their ${Coach.NAME[t.piece[1]]}${at(t.square)} has a green ring: you can win it. Can you find how?`, 'good');
+      }
     }
-    return html + P('Your turn. Tap one of your pieces to see where it can go.');
+    if (cfg.pieceInfo) html += P('Your turn. Tap one of your pieces to see what it is and where it can go.');
+    return html || P('Your turn.');
   }
 
   function renderCoach() {
-    $('#coachToggle').checked = coachOn;
-    $('#coach').hidden = !coachOn;
-    if (!coachOn) return;
+    const cfg = H();
+    $('#helpLevel').value = helpLevel;
+    $('#coach').hidden = !cfg;
+    if (!cfg) return;
     $('#coachText').innerHTML = coachText();
+    $('#legend').hidden = !cfg.win;
+    $('#lessonsTip').hidden = helpLevel !== 'newbie';
     const g = view.game;
     $('#hintBtn').disabled = !view.you || !!g.result || g.turn !== view.you || pending;
   }
 
-  $('#coachToggle').onchange = (e) => {
-    coachOn = e.target.checked;
-    store.set('localStorage', 'chess-coach', coachOn ? '1' : '0');
+  $('#helpLevel').onchange = (e) => {
+    helpLevel = e.target.value;
+    store.set('localStorage', 'chess-help', helpLevel);
     hint = null;
     render();
   };
@@ -393,7 +415,7 @@
     $('#hintBtn').disabled = true;
     $('#coachText').innerHTML = '<p>Thinking…</p>';
     setTimeout(() => {
-      hint = Coach.bestMove(view.game);
+      hint = Coach.bestMove(view.game, H() && H().plain);
       selected = null;
       render();
     }, 30);
@@ -519,7 +541,8 @@
     if (selected !== null) for (const m of legal) if (m.from === selected) targets.set(m.to, m.capture);
     const kingInCheck = g.inCheck ? g.board.indexOf(g.turn + 'K') : -1;
     const marks = coachMarks();
-    const showSafety = coachOn && selected !== null;
+    const showSafety = !!(H() && H().dots) && selected !== null;
+    const squareNames = !!(H() && H().squareNames);
 
     for (let pos = 0; pos < 64; pos++) {
       const sq = flip ? 63 - pos : pos;
@@ -542,6 +565,7 @@
       let html = g.board[sq] ? glyph(g.board[sq]) : '';
       if (pos % 8 === 0) html += `<span class="coord rank">${8 - r}</span>`;
       if (pos >= 56) html += `<span class="coord file">${'abcdefgh'[c]}</span>`;
+      if (squareNames && !g.board[sq]) html += `<span class="sqname">${Chess.sqName(sq)}</span>`;
       el.innerHTML = html;
       el.setAttribute('aria-label', Chess.sqName(sq) + (g.board[sq] ? ' ' + COLOR_NAME[g.board[sq][0]] + ' ' + g.board[sq][1] : ''));
     }

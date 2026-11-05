@@ -140,7 +140,7 @@
     return alpha;
   }
 
-  function bestMove(s) {
+  function bestMove(s, plain) {
     const moves = order(C.legalMoves(s), s.board);
     let best = null, bestScore = -Infinity;
     for (const m of moves) {
@@ -148,12 +148,15 @@
       const v = -search(C.advance(s, m), 1, -MATE - 1, -alpha, 1);
       if (v > bestScore) { bestScore = v; best = m; }
     }
-    return best && { move: best, why: explainMove(s, best) };
+    return best && { move: best, why: explainMove(s, best, plain) };
   }
 
-  function explainMove(s, m) {
+  // plain = true: no square names (for players who don't know them yet). The hint's
+  // squares are shown on the board: a blue ring on the piece, a blue square where it goes.
+  function explainMove(s, m, plain) {
     const p = s.board[m.from];
-    const what = `Move your ${named(p)} from ${sq(m.from)} to ${sq(m.to)}.`;
+    const at = (i) => (plain ? '' : ` on ${sq(i)}`);
+    const what = plain ? `Move your ${named(p)} (blue ring) to the blue square.` : `Move your ${named(p)} from ${sq(m.from)} to ${sq(m.to)}.`;
     const n = C.makeMove(s, m);
     if (n && n.result && n.result.reason === 'checkmate') return `${what} That's checkmate. You win!`;
     if (m.castle) return `Castle! Your king moves two squares and the rook jumps over it. The king is safer and the rook joins the game.`;
@@ -166,10 +169,10 @@
       return `${what} You capture their ${named(cap)}.`;
     }
     const danger = exposure(s.board, m.from);
-    if (danger) return `${what} Your ${named(p)} is under attack by the ${named(danger.attackerPiece)} on ${sq(danger.attacker)}. This gets it to safety.`;
+    if (danger) return `${what} Your ${named(p)} is under attack by their ${named(danger.attackerPiece)}${at(danger.attacker)}. This gets it to safety.`;
     const after = new Set(threats(C.applyToBoard(s.board, m), s.turn).map((t) => t.square));
     const saved = threats(s.board, s.turn).find((t) => t.square !== m.from && !after.has(t.square));
-    if (saved) return `${what} This protects your ${named(saved.piece)} on ${sq(saved.square)}, which was under attack.`;
+    if (saved) return `${what} This protects your ${named(saved.piece)}${at(saved.square)}, which was under attack.`;
     if (n && n.inCheck) return `${what} It puts their king in check, so they must deal with it.`;
     if (s.history.length < 16 && (p[1] === 'N' || p[1] === 'B') && ((m.from >> 3) === 0 || (m.from >> 3) === 7)) {
       return `${what} This brings a new piece into the game.`;
@@ -189,7 +192,7 @@
     return notes;
   }
 
-  function describeLastMove(prev, g) {
+  function describeLastMove(prev, g, plain) {
     if (!prev || !g.lastMove) return '';
     const { from, to } = g.lastMove;
     const p = prev.board[from];
@@ -197,8 +200,9 @@
     const who = COLOR[p[0]];
     const san = g.history[g.history.length - 1] || '';
     if (san.startsWith('O-O')) return `${who} castled.`;
-    let text = `${who} moved a ${named(p)} from ${sq(from)} to ${sq(to)}`;
     const cap = prev.board[to] || (p[1] === 'P' && (from & 7) !== (to & 7) ? C.opp(p[0]) + 'P' : null);
+    if (plain) return `${who} moved a ${named(p)}${cap ? ` and captured your ${named(cap)}` : ''}. The yellow squares show where it came from and where it went.`;
+    let text = `${who} moved a ${named(p)} from ${sq(from)} to ${sq(to)}`;
     if (cap) text += ` and captured your ${named(cap)}`;
     return text + '.';
   }

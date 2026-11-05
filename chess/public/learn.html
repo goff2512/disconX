@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chess Lessons</title>
+  <link rel="icon" href="icon-192.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="learn.css">
+</head>
+<body>
+  <main id="list" class="learn-list" hidden>
+    <header class="learn-head">
+      <h1><span class="logo">♞&#xFE0E;</span> Chess Lessons</h1>
+      <a href="./" class="ghost">Play a game</a>
+    </header>
+    <p class="sub">Short lessons, one step at a time. Start at the top and work your way down. Finished lessons get a ✓.</p>
+    <div id="progress" class="progress"><div id="progressBar"></div></div>
+    <div id="stages"></div>
+    <p class="hint"><button type="button" id="resetProgress" class="link">Reset my progress</button></p>
+  </main>
+
+  <main id="lesson" class="learn-lesson" hidden>
+    <div class="lesson-top">
+      <button type="button" id="backBtn" class="ghost">← All lessons</button>
+      <span id="stepCount" class="step-count"></span>
+    </div>
+    <h2 id="lessonTitle"></h2>
+    <div class="lesson-body">
+      <div class="lesson-text">
+        <div id="instruction" class="instruction"></div>
+        <div id="feedback" class="feedback" aria-live="polite"></div>
+        <div id="quiz" class="quiz" hidden></div>
+        <div class="lesson-buttons">
+          <button type="button" id="restartBtn" class="ghost">Start this step again</button>
+          <button type="button" id="nextBtn" class="primary" hidden>Next →</button>
+        </div>
+      </div>
+      <div id="boardWrap" class="lesson-board">
+        <div id="board" role="grid" aria-label="Chess board"></div>
+      </div>
+    </div>
+  </main>
+
+  <div id="done" class="modal" hidden>
+    <div class="modal-box done-box">
+      <div class="big-star">★</div>
+      <p id="doneText"></p>
+      <div class="coach-row">
+        <button type="button" id="doneList">All lessons</button>
+        <button type="button" id="doneNext" class="primary">Next lesson →</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="chess.js"></script>
+  <script src="coach.js"></script>
+  <script src="lessons.js"></script>
+  <script src="learn.js"></script>
+</body>
+</html>

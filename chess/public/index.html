@@ -20,6 +20,7 @@
       <input id="code" maxlength="12" placeholder="Game code" autocapitalize="characters" autocomplete="off">
       <button type="submit">Join</button>
     </form>
+    <a class="lessons-link" href="learn.html"><span class="pc w">♞&#xFE0E;</span> Lessons: learn to play, step by step</a>
     <p class="hint" id="addrs"></p>
   </main>
 
@@ -32,15 +33,23 @@
     <aside class="panel">
       <div id="status" aria-live="polite"></div>
       <div class="switches">
-        <label class="switch"><input type="checkbox" id="coachToggle"><span class="track"></span> Learning mode</label>
+        <label class="help-select">Help level
+          <select id="helpLevel">
+            <option value="off">Off</option>
+            <option value="newbie">New learner</option>
+            <option value="intermediate">Intermediate</option>
+            <option value="regular">Regular</option>
+          </select>
+        </label>
         <label class="switch"><input type="checkbox" id="alertToggle"><span class="track"></span> Turn alerts</label>
       </div>
       <p id="alertNote" class="note" hidden></p>
       <div id="coach" hidden>
+        <p id="lessonsTip" class="lessons-tip" hidden>New to chess? <a href="learn.html" target="_blank">Try the Lessons</a> to learn the pieces and the board step by step.</p>
         <div id="coachText"></div>
         <div class="coach-row">
           <button id="hintBtn" type="button">💡 Hint</button>
-          <span class="legend"><i class="lg-red"></i>danger <i class="lg-green"></i>you can win it</span>
+          <span class="legend" id="legend"><i class="lg-red"></i>danger <i class="lg-green"></i>you can win it</span>
         </div>
       </div>
       <div id="actions"></div>
@@ -53,6 +62,7 @@
         <button id="flip" type="button" class="ghost">Flip board</button>
         <button id="device" type="button" class="ghost" hidden>Use on phone</button>
         <a href="./" class="ghost">Leave</a>
+        <a href="learn.html" target="_blank" class="ghost">Lessons</a>
         <span id="conn" class="conn"></span>
       </div>
     </aside>
