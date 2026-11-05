@@ -235,3 +235,5 @@ function openBrowser(url) {
 }
 
 server.listen(port, '0.0.0.0');
+
+module.exports = server;

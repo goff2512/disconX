@@ -10,5 +10,6 @@ if errorlevel 1 (
   pause
   exit /b 1
 )
-node server.js --open
+node launch.js 
+echo.
 pause

@@ -4,21 +4,36 @@ Two-player chess in the browser over your home network. No installs beyond Node.
 
 ## Run it
 
-You need **Node.js** (the free "LTS" version from https://nodejs.org).
+### Windows: one-time setup with desktop icons
 
-**Easiest:** double-click the launcher for your system. It starts the server and opens your browser.
+Paste this into PowerShell:
 
-| System  | Double-click            |
-|---------|-------------------------|
-| Windows | `start-windows.bat`     |
-| macOS   | `start-mac.command` (first time: right-click → Open) |
-| Linux   | `start-linux.sh`        |
+```powershell
+irm https://raw.githubusercontent.com/goff2512/disconX/ccr-74cac628-im4nmj/chess/install-windows.ps1 | iex
+```
+
+It installs Node.js and cloudflared if needed, puts the game in `%USERPROFILE%\LANChess`, and adds three desktop icons:
+
+| Icon | What it does |
+|------|--------------|
+| **Chess (home)** | Starts the game for your home network and opens the browser |
+| **Chess (online)** | Also opens a Cloudflare tunnel, waits until the public address works, then opens it |
+| **Update Chess** | Downloads the latest version |
+
+### Double-click launchers
+
+| System  | Home network            | Online |
+|---------|-------------------------|--------|
+| Windows | `start-windows.bat`     | `start-online-windows.bat` |
+| macOS   | `start-mac.command` (first time: right-click → Open) | `./start-mac.command --online` |
+| Linux   | `start-linux.sh`        | `./start-linux.sh --online` |
 
 **Or from a terminal:**
 
 ```bash
 cd chess
-node server.js
+node server.js          # just the server
+node launch.js --online  # server + tunnel + browser
 ```
 
 > Don't double-click `server.js` itself. On Windows that runs it with the wrong program and shows a "JScript" error.
