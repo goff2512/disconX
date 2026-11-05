@@ -4,12 +4,26 @@ Two-player chess in the browser over your home network. No installs beyond Node.
 
 ## Run it
 
+You need **Node.js** (the free "LTS" version from https://nodejs.org).
+
+**Easiest:** double-click the launcher for your system. It starts the server and opens your browser.
+
+| System  | Double-click            |
+|---------|-------------------------|
+| Windows | `start-windows.bat`     |
+| macOS   | `start-mac.command` (first time: right-click → Open) |
+| Linux   | `start-linux.sh`        |
+
+**Or from a terminal:**
+
 ```bash
 cd chess
-node server.js          # or: npm start
+node server.js
 ```
 
-The server prints its addresses:
+> Don't double-click `server.js` itself. On Windows that runs it with the wrong program and shows a "JScript" error.
+
+Keep the window open while you play. It shows the address for the other player:
 
 ```
 On this computer:   http://localhost:3000
@@ -20,7 +34,7 @@ On your network:    http://192.168.1.42:3000
 2. Send the **invite link** shown in the side panel to the other player (any phone, tablet or computer on the same Wi-Fi).
 3. The first person in plays White and the second plays Black. Anyone else who opens the link watches.
 
-Use `PORT=8080 node server.js` to pick another port. If the other device can't connect, allow Node through
+If port 3000 is busy it tries 3001, 3002, and so on. Use `PORT=8080 node server.js` to pick a port yourself. If the other device can't connect, allow Node through
 the host computer's firewall (Windows asks the first time; on macOS it's System Settings → Network → Firewall).
 
 ## Features

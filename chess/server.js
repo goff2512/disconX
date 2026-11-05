@@ -160,7 +160,7 @@ const server = http.createServer((req, res) => {
   const url = new URL(req.url, 'http://localhost');
   if (req.method === 'GET' && url.pathname === '/api/events') return handleEvents(req, res, url);
   if (req.method === 'POST' && url.pathname === '/api/action') return handleAction(req, res);
-  if (req.method === 'GET' && url.pathname === '/api/info') return sendJSON(res, 200, { ips: lanAddresses(), port: PORT });
+  if (req.method === 'GET' && url.pathname === '/api/info') return sendJSON(res, 200, { ips: lanAddresses(), port });
   if (req.method === 'GET') return serveStatic(req, res, url);
   sendJSON(res, 405, { error: 'Method not allowed' });
 });
@@ -171,9 +171,29 @@ setInterval(() => {
   for (const [id, room] of rooms) if (!room.clients.size && room.touched < cutoff) rooms.delete(id);
 }, 3600 * 1000).unref();
 
-server.listen(PORT, '0.0.0.0', () => {
-  console.log('\n  LAN Chess is running.\n');
-  console.log(`  On this computer:   http://localhost:${PORT}`);
-  for (const ip of lanAddresses()) console.log(`  On your network:    http://${ip}:${PORT}`);
-  console.log('\n  Press Ctrl+C to stop.\n');
+let port = PORT;
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE' && port < PORT + 20) {
+    console.log(`  Port ${port} is busy, trying ${port + 1}…`);
+    port += 1;
+    return server.listen(port, '0.0.0.0');
+  }
+  console.error(`\n  Could not start the server: ${err.message}\n`);
+  process.exit(1);
 });
+
+server.on('listening', () => {
+  console.log('\n  LAN Chess is running.\n');
+  console.log(`  On this computer:   http://localhost:${port}`);
+  for (const ip of lanAddresses()) console.log(`  On your network:    http://${ip}:${port}`);
+  console.log('\n  Leave this window open while you play. Press Ctrl+C to stop.\n');
+  if (process.argv.includes('--open')) openBrowser(`http://localhost:${port}`);
+});
+
+function openBrowser(url) {
+  const { exec } = require('child_process');
+  const cmd = process.platform === 'win32' ? `start "" "${url}"` : process.platform === 'darwin' ? `open "${url}"` : `xdg-open "${url}"`;
+  exec(cmd, () => {});
+}
+
+server.listen(port, '0.0.0.0');
