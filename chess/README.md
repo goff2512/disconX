@@ -23,12 +23,14 @@ node server.js
 
 > Don't double-click `server.js` itself. On Windows that runs it with the wrong program and shows a "JScript" error.
 
-Keep the window open while you play. It shows the address for the other player:
+Keep the window open while you play. It shows the addresses to use (yours will have different numbers):
 
 ```
 On this computer:   http://localhost:3000
-On your network:    http://192.168.1.42:3000
+On your network:    http://192.168.x.x:3000    <- your PC's real address
 ```
+
+On the PC running the server, `http://localhost:3000` always works. Other devices use the "On your network" address.
 
 1. Open the address, enter your name, click **Create new game**.
 2. Send the **invite link** shown in the side panel to the other player (any phone, tablet or computer on the same Wi-Fi).
