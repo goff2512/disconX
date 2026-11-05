@@ -18,7 +18,7 @@ It installs Node.js and cloudflared if needed, puts the game in `%USERPROFILE%\L
 |------|--------------|
 | **Chess (home)** | Starts the game for your home network and opens the browser |
 | **Chess (online)** | Also opens a Cloudflare tunnel, waits until the public address works, then opens it |
-| **Update Chess** | Downloads the latest version |
+| **Update Chess** | Downloads the latest version (runs `update-windows.bat`) |
 
 ### Double-click launchers
 

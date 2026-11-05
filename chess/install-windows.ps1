@@ -1,13 +1,12 @@
 # LAN Chess installer and updater for Windows.
 # Paste into PowerShell:
 #   irm https://raw.githubusercontent.com/goff2512/disconX/ccr-74cac628-im4nmj/chess/install-windows.ps1 | iex
-# Run it again any time to update. It creates desktop shortcuts:
+# It creates desktop shortcuts (Update Chess runs update-windows.bat, no PowerShell needed):
 #   Chess (home), Chess (online), Update Chess
 & {
   $ErrorActionPreference = 'Stop'
   $Branch    = 'ccr-74cac628-im4nmj'
   $ZipUrl    = "https://github.com/goff2512/disconX/archive/refs/heads/$Branch.zip"
-  $SelfUrl   = "https://raw.githubusercontent.com/goff2512/disconX/$Branch/chess/install-windows.ps1"
   $Dir       = Join-Path $HOME 'LANChess'
 
   function Step($text) { Write-Host "  - $text" -ForegroundColor Cyan }
@@ -64,8 +63,7 @@
   }
   Make-Shortcut 'Chess (home)'   "$Dir\start-windows.bat"        '' "$Dir\icons\chess.ico"        'Play chess on your home network'
   Make-Shortcut 'Chess (online)' "$Dir\start-online-windows.bat" '' "$Dir\icons\chess-online.ico" 'Play chess over the internet'
-  $update = "-NoProfile -ExecutionPolicy Bypass -Command `"irm '$SelfUrl' | iex; Read-Host 'Press Enter to close'`""
-  Make-Shortcut 'Update Chess' "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" $update "$Dir\icons\chess.ico" 'Download the latest LAN Chess'
+  Make-Shortcut 'Update Chess'   "$Dir\update-windows.bat"        '' "$Dir\icons\chess.ico"        'Download the latest LAN Chess'
 
   Write-Host "`n  All done! Double-click 'Chess (home)' or 'Chess (online)' on your desktop.`n" -ForegroundColor Green
 }
