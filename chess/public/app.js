@@ -110,31 +110,64 @@
     squares.push(d);
   }
 
+  // Live updates arrive over a Server-Sent Events stream. Some tunnels and proxies hold
+  // that stream back, so if nothing arrives quickly we fall back to polling once a second.
+  let polling = false;
+  let inFlight = 0;     // actions being sent; polls wait so they don't show a stale board
+  let lastRaw = '';
+  const conn = $('#conn');
+
+  function onState(raw) {
+    if (raw === lastRaw) return;
+    lastRaw = raw;
+    const next = JSON.parse(raw);
+    const oldGame = view && view.game;
+    if (!oldGame || next.game.history.join() !== oldGame.history.join()) {
+      hint = null;
+      if (oldGame && next.game.history.length === oldGame.history.length + 1) prevGame = oldGame;
+      else if (next.game.history.length === 0) prevGame = null;
+    }
+    view = next;
+    pending = false;
+    conn.textContent = 'Connected';
+    conn.classList.remove('bad');
+    render();
+  }
+
   function connect() {
     const q = new URLSearchParams({ room, token, name });
     const es = new EventSource('/api/events?' + q);
-    const conn = $('#conn');
-    es.addEventListener('state', (e) => {
-      const next = JSON.parse(e.data);
-      const oldGame = view && view.game;
-      if (!oldGame || next.game.history.length !== oldGame.history.length || next.game.history.join() !== oldGame.history.join()) {
-        hint = null;
-        if (oldGame && next.game.history.length === oldGame.history.length + 1) prevGame = oldGame;
-        else if (next.game.history.length === 0) prevGame = null;
-      }
-      view = next;
-      pending = false;
-      conn.textContent = 'Connected';
-      conn.classList.remove('bad');
-      render();
-    });
+    let got = false;
+    es.addEventListener('state', (e) => { got = true; onState(e.data); });
     es.onerror = () => {
+      if (polling) return;
       conn.textContent = 'Reconnecting…';
       conn.classList.add('bad');
     };
+    setTimeout(() => {
+      if (got) return;
+      es.close();
+      polling = true;
+      poll();
+    }, 4000);
+  }
+
+  async function poll() {
+    clearTimeout(poll.timer);
+    if (!inFlight) {
+      try {
+        const r = await fetch('/api/state?' + new URLSearchParams({ room, token, name }), { cache: 'no-store' });
+        if (r.ok && !inFlight) onState(await r.text());
+      } catch (e) {
+        conn.textContent = 'Reconnecting…';
+        conn.classList.add('bad');
+      }
+    }
+    poll.timer = setTimeout(poll, 1000);
   }
 
   async function act(type, extra) {
+    inFlight++;
     try {
       const r = await fetch('/api/action', {
         method: 'POST',
@@ -142,12 +175,22 @@
         body: JSON.stringify(Object.assign({ room, token, name, type }, extra)),
       });
       const data = await r.json();
-      if (!r.ok) { toast(data.error || 'Something went wrong'); pending = false; render(); }
+      if (!r.ok) { toast(data.error || 'Something went wrong'); failed(); }
     } catch (e) {
       toast('Lost connection to the server');
-      pending = false;
-      render();
+      failed();
+    } finally {
+      inFlight--;
+      if (polling) poll();
     }
+  }
+
+  // Undo an optimistic move by reloading the real state from the server.
+  function failed() {
+    pending = false;
+    lastRaw = '';
+    fetch('/api/state?' + new URLSearchParams({ room, token, name }), { cache: 'no-store' })
+      .then((r) => r.text()).then(onState).catch(() => render());
   }
 
   function myLegalMoves() {
