@@ -139,12 +139,51 @@
       if (oldGame && next.game.history.length === oldGame.history.length + 1) prevGame = oldGame;
       else if (next.game.history.length === 0) prevGame = null;
     }
+    const oldView = view;
     view = next;
     pending = false;
+    if (oldView) turnAlerts(oldView, next);
     conn.textContent = 'Connected';
     conn.classList.remove('bad');
     render();
   }
+
+  function turnAlerts(prev, next) {
+    const me = next.you, g = next.game, pg = prev.game;
+    if (!me) return;
+    const them = Chess.opp(me);
+    const theirName = next.names[them] || COLOR_NAME[them];
+    if (!pg.result && g.result) {
+      const [title] = statusText();
+      return Alerts.alert(title, 'The game is over.', 'end');
+    }
+    if (g.history.length > pg.history.length && g.turn === me && !g.result) {
+      const san = g.history[g.history.length - 1];
+      return Alerts.alert(g.inCheck ? 'Your move: check!' : 'Your move!', `${theirName} played ${san}.`, 'turn');
+    }
+    if (prev.drawOffer !== them && next.drawOffer === them) return Alerts.alert('Draw offered', `${theirName} offers a draw.`, 'turn');
+    if (!prev.seated[them] && next.seated[them]) return Alerts.alert('Opponent joined', `${theirName} joined the game.`, 'turn');
+    if (g.history.length === 0 && pg.history.length > 0 && g.turn === me) return Alerts.alert('New game: your move!', `You play ${COLOR_NAME[me]}.`, 'turn');
+  }
+
+  function renderAlertNote() {
+    const note = $('#alertNote');
+    $('#alertToggle').checked = Alerts.isEnabled();
+    if (!Alerts.isEnabled()) { note.hidden = true; return; }
+    const perm = Alerts.permission();
+    note.hidden = false;
+    if (perm === 'granted') note.textContent = 'Sound, tab title and pop-up notifications are on.';
+    else if (perm === 'denied') note.textContent = 'Sound and tab title are on. Pop-ups are blocked in this browser\'s site settings.';
+    else if (perm === 'default') note.innerHTML = 'Sound and tab title are on. <button type="button" id="allowNotif" class="link">Allow pop-ups</button>';
+    else note.textContent = 'Sound and tab title are on. (Pop-ups need the https online link or localhost.)';
+    const btn = $('#allowNotif');
+    if (btn) btn.onclick = () => Notification.requestPermission().then(renderAlertNote, renderAlertNote);
+  }
+  $('#alertToggle').onchange = (e) => {
+    Alerts.setEnabled(e.target.checked);
+    setTimeout(renderAlertNote, 50);
+    if ('Notification' in window && Notification.permission === 'default') setTimeout(renderAlertNote, 3000);
+  };
 
   function connect() {
     const q = new URLSearchParams({ room, token, name });
@@ -514,6 +553,7 @@
     $('#status').innerHTML = escapeHTML(main) + (small ? `<span class="small">${escapeHTML(small)}</span>` : '');
     renderActions();
     $('#device').hidden = !view.you;
+    renderAlertNote();
     renderCoach();
     renderMoves();
   }

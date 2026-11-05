@@ -76,6 +76,15 @@ Flip the **Learning mode** switch in the side panel. It only changes that player
 - **Hint** button suggests a move and explains why
 - Beginner tips while you wait for the other player
 
+## Turn alerts
+
+On by default (switch in the side panel). When it becomes your turn, your opponent joins, offers a draw, or the game ends:
+
+- a short chime, and a vibration on Android phones
+- if the tab is in the background, its title flashes and a pop-up notification appears
+
+Pop-up notifications need a secure address: the `https://…trycloudflare.com` link from **Chess (online)**, or `localhost` on the computer running the server. On the plain `http://192.168…` home address you get the chime and the flashing title. A phone that's locked, or a browser that's closed, can't alert.
+
 ## Notes
 
 - Games live in the server's memory; they're gone when you stop the server.
